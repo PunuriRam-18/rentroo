@@ -1,5 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import axios from 'axios';
+
+import { HiMenu, HiX } from 'react-icons/hi';
 
 function Navbar() {
 
@@ -7,33 +11,66 @@ function Navbar() {
 
     const token = localStorage.getItem('token');
 
-    const role = localStorage.getItem('role');
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+
+        const fetchProfile = async () => {
+
+            try {
+
+                if (!token) return;
+
+                const { data } = await axios.get(
+                    `${import.meta.env.VITE_API_URL}/profile`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                );
+
+                setUser(data);
+
+            } catch (error) {
+
+                console.log(error);
+            }
+        };
+
+        fetchProfile();
+
+    }, [token]);
 
     const logoutHandler = () => {
 
         localStorage.removeItem('token');
 
-        localStorage.removeItem('role');
-
         toast.success('Logout Successful');
 
         navigate('/');
+
+        window.location.reload();
     };
 
     return (
 
-        <nav className="bg-[#111827] border-b border-[#1F2937] px-8 py-4 sticky top-0 z-50 backdrop-blur-lg">
+        <nav className="bg-[#111827]/95 border-b border-[#1F2937] sticky top-0 z-50 backdrop-blur-lg">
 
-            <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <div className="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
 
                 <Link
                     to="/"
-                    className="text-4xl font-bold tracking-wide text-white"
+                    className="text-3xl md:text-4xl font-bold tracking-wide text-white"
                 >
                     RENTROO
                 </Link>
 
-                <div className="flex items-center gap-3">
+                {/* Desktop Menu */}
+
+                <div className="hidden md:flex items-center gap-3">
 
                     {
                         token && (
@@ -67,7 +104,7 @@ function Navbar() {
                     }
 
                     {
-                        role === 'admin' && (
+                        user?.isAdmin && (
 
                             <Link
                                 to="/admin"
@@ -113,7 +150,111 @@ function Navbar() {
 
                 </div>
 
+                {/* Mobile Menu Button */}
+
+                <button
+                    onClick={() => setMenuOpen(!menuOpen)}
+                    className="md:hidden text-white text-4xl"
+                >
+                    {
+                        menuOpen ? <HiX /> : <HiMenu />
+                    }
+                </button>
+
             </div>
+
+            {/* Mobile Menu */}
+
+            {
+                menuOpen && (
+
+                    <div className="md:hidden bg-[#111827] border-t border-[#1F2937] px-5 py-5 space-y-4 flex flex-col">
+
+                        {
+                            token && (
+
+                                <Link
+                                    to="/dashboard"
+                                    onClick={() => setMenuOpen(false)}
+                                    className="text-[#94A3B8] hover:text-white transition"
+                                >
+                                    Dashboard
+                                </Link>
+                            )
+                        }
+
+                        <Link
+                            to="/cars"
+                            onClick={() => setMenuOpen(false)}
+                            className="text-[#94A3B8] hover:text-white transition"
+                        >
+                            Cars
+                        </Link>
+
+                        {
+                            token && (
+
+                                <Link
+                                    to="/bookings"
+                                    onClick={() => setMenuOpen(false)}
+                                    className="text-[#94A3B8] hover:text-white transition"
+                                >
+                                    Bookings
+                                </Link>
+                            )
+                        }
+
+                        {
+                            user?.isAdmin && (
+
+                                <Link
+                                    to="/admin"
+                                    onClick={() => setMenuOpen(false)}
+                                    className="text-[#94A3B8] hover:text-white transition"
+                                >
+                                    Admin
+                                </Link>
+                            )
+                        }
+
+                        {
+                            token ? (
+
+                                <button
+                                    onClick={logoutHandler}
+                                    className="bg-gradient-to-r from-[#3B82F6] to-[#06B6D4] py-3 rounded-2xl font-semibold text-white"
+                                >
+                                    Logout
+                                </button>
+
+                            ) : (
+
+                                <>
+
+                                    <Link
+                                        to="/login"
+                                        onClick={() => setMenuOpen(false)}
+                                        className="text-[#94A3B8] hover:text-white transition"
+                                    >
+                                        Login
+                                    </Link>
+
+                                    <Link
+                                        to="/register"
+                                        onClick={() => setMenuOpen(false)}
+                                        className="bg-gradient-to-r from-[#3B82F6] to-[#06B6D4] py-3 rounded-2xl text-center font-semibold text-white"
+                                    >
+                                        Register
+                                    </Link>
+
+                                </>
+
+                            )
+                        }
+
+                    </div>
+                )
+            }
 
         </nav>
     );
